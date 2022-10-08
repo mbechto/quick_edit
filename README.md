@@ -19,7 +19,7 @@ Configure all files to be suggested by `quick_edit` in the file `.quick_edit.tom
 
 ```toml 
 [choices]
-paths = [ "~/notes.txt", "~/.xmonad/xmonad.hs", "/etc/hosts", "/etc/shorewall/rules" ]
+paths = [ "~/notes.txt", "~/.xmonad/xmonad.hs", "/etc/hosts", "/etc/shorewall/rules", ".config/nvim/lua/*.lua" ]
 ```
 
 Above configuration will produce following output:
@@ -29,6 +29,7 @@ Above configuration will produce following output:
 1): ~/.xmonad/xmonad.hs
 2): /etc/hosts
 3): /etc/shorewall/rules
+4): .config/nvim/lua/*.lua
 Type choice:
 ```
 
