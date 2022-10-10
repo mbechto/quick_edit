@@ -1,7 +1,7 @@
 use serde_derive::Deserialize;
 use std::io::{stdin, stdout};
 use std::io::{Result, Write};
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::Command;
 use std::{fs, usize};
 use termion::event::Key;
@@ -46,7 +46,7 @@ fn try_read_choice_as_index() -> Option<usize> {
         match key.unwrap() {
             Key::Char(c) => {
                 let index = try_map_to_index(c);
-                if index != None {
+                if index.is_some() {
                     return index;
                 }
             }
@@ -59,32 +59,43 @@ fn try_read_choice_as_index() -> Option<usize> {
     None
 }
 
+fn read_quick_edit_cfg() -> Config {
+    let cfg_file = Path::new(option_env!("QE_CONFIG_FILE").unwrap_or(".quick_edit.toml"));
+    let cfg_slice = fs::read(&cfg_file).expect(&format!(
+        "Could not read config file '{}'!",
+        cfg_file.display()
+    ));
+
+    toml::from_slice(&cfg_slice).expect(&format!(
+        "Failed to parse config file '{}'!",
+        cfg_file.display()
+    ))
+}
+
 fn main() -> Result<()> {
-    let cfg_file = PathBuf::from(option_env!("QE_CONFIG_FILE").unwrap_or(".quick_edit.toml"));
-    let cfg_slice = fs::read(&cfg_file).expect(&format!("Could not read config file {:?}!", &cfg_file));
-    let config: Config = toml::from_slice(&cfg_slice).unwrap();
-
+    let config = read_quick_edit_cfg();
     for (index, path) in config.choices.paths.iter().enumerate() {
-        let index_char = index_to_char(index);
-        if index_char.is_none() {
-            return Ok(()); // FIXME: Return an error instead of Ok
-        }
+        let index_char = index_to_char(index).expect(&format!(
+            "Cannot enumerate more than {index} elements! \
+             Quick edit is intended for short selections, \
+             which can be typed with a single keystroke."
+        ));
 
-        println!("{}): {}", index_char.unwrap(), path);
+        println!("{}): {}", index_char, path);
     }
 
     let choice_index = try_read_choice_as_index();
     if choice_index.is_none() {
-        // No valid choice by user, return success
+        // No valid choice by user, return success:
         return Ok(());
     };
 
     let choice_path = config.choices.paths.get(choice_index.unwrap());
-    let _err = Command::new("sh")
+    Command::new("sh")
         .arg("-c")
         .arg(format!("$EDITOR {}", choice_path.unwrap()))
         .status()
-        .expect("Expected editor command to succeed!");
+        .expect("Failed to run editor command!");
 
     Ok(())
 }
